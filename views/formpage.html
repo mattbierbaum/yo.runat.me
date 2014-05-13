@@ -1,0 +1,16 @@
+<form action='/set' method='post' id='form'>
+  <label>yo.runat.me/</label>
+  <input type='text' name='nickname' value="{{ word }}" readonly id='nickname'>
+  <br>
+  <label>goes to: </label>
+  <input type='text' name='url' required>
+  <br>
+  <button type='submit' id='submit'>submit</button>
+    <div class='spacer'></div>
+</form>
+<center>
+<div class='small'>
+  Refresh for a new word, or goto /word/info to see if available
+</div>
+<center>
+%rebase main

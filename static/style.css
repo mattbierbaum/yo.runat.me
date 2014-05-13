@@ -1,0 +1,40 @@
+body { font-family: Courier; }
+#form {
+  margin: 0 auto;
+  width: 500px;
+  padding: 14px;
+}
+.spacer {
+  clear:both;
+  height:1px;
+}
+
+#form label {
+  display: block;
+  text-align: right;
+  width: 140px;
+  float: left;
+  padding: 4px 2px;
+}
+
+#nickname {
+  background-color: #eee;
+}
+
+#form input {
+  float: left;
+  padding: 4px 2px;
+  width: 300px;
+  margin: 2px 0 20px 10px;
+}
+
+#form button {
+  clear:both;
+  margin-left: 150px;
+  text-align: center;
+  padding: 4px 2px;
+}
+
+.small {
+    font-size: 0.8em;
+}

@@ -1,0 +1,15 @@
+<center>
+  <a href="/{{ word }}">{{ word }}</a> not defined!
+</center>
+
+<form action='/set' method='post' id='form'>
+  <label>yo.runat.me/</label>
+  <input type='text' name='nickname' value="{{ word }}" readonly id='nickname'>
+  <br>
+  <label>goes to: </label>
+  <input type='text' name='url' required>
+  <br>
+  <button type='submit' id='submit'>submit</button>
+    <div class='spacer'></div>
+</form>
+%rebase main

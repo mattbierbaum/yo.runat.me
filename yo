@@ -1,0 +1,120 @@
+#! /usr/bin/env python
+import os
+os.chdir(os.path.dirname(__file__))
+
+import bottle
+from bottle import route, run, template, response, get, request, redirect, static_file, error
+import cPickle as pickle
+from random import choice
+import sqlite3
+import urlparse
+import urllib
+
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)),'yo.db')
+SPECIAL = ("static","set",'dump','random')
+
+def connect_db():
+    return sqlite3.connect(DATABASE)
+
+def get_used_words():
+    with connect_db() as db:
+        words = set(db.execute('SELECT nickname from urls').fetchall())
+    return words.union(SPECIAL)
+
+def get_random_noun():
+    with open('words.pickle') as f:
+        words = pickle.load(f)
+    good = False
+    used_words = get_used_words()
+    while not good:
+        word = choice(list(words))
+        if word not in used_words:
+            good = True
+    return word
+
+@route('/set',method='POST')
+def set_url():
+    nickname = request.forms.get('nickname')
+    url = request.forms.get('url')
+    parts = urlparse.urlsplit(url)
+    if not parts[0]:
+        parts = urlparse.SplitResult('http',*parts[1:])
+    url = urlparse.urlunsplit(parts)
+    fullurl = urllib.quote(url, safe="%/:=&?~#+!$,;'@()*[]")
+    with connect_db() as db:
+        db.execute('INSERT into urls (nickname,url) VALUES (?,?)',[nickname,fullurl])
+        db.commit()
+
+    return template('definepage',word=nickname,url=fullurl)
+
+@route('/random')
+def get_random_page():
+    """ Goto random page """
+    with connect_db() as db:
+        urls = db.execute('SELECT url from urls').fetchall()
+    return genredirect(choice(urls)[0])
+
+@route('/dump')
+def dump():
+    """ Dump the database """
+    with connect_db() as db:
+        guys = db.execute('SELECT * from urls').fetchall()
+    return "<br>".join( str(x) for x in guys )
+
+def possible(noun=None):
+    """ Return the page for a given noun """
+    noun = noun or get_random_noun()
+    return template('formpage',word=noun)
+
+@route('/')
+def landing():
+    word = get_random_noun()
+    return template('formpage',word=word)
+
+def genredirect(location):
+    """ Generate our own redirect """
+    code = 303
+    raise bottle.HTTPResponse("",status=code,Location=location)
+
+@route('/<noun>')
+def goyo(noun):
+    with connect_db() as db:
+        url = db.execute('SELECT url from urls WHERE nickname=?',[noun]).fetchone()
+    if url:
+        genredirect(url[0])
+    else:
+        return template('notdefined',word=noun)
+
+@route('/<noun>/info')
+def info(noun):
+    """ Get info on a particular entry """
+    with connect_db() as db:
+        url = db.execute('SELECT url from urls WHERE nickname=?',[noun]).fetchone()
+    if url:
+        return template('infopage',word=noun,url=url[0])
+    else:
+        return template('notdefined',word=noun)
+
+@route('/static/<filename:path>')
+def server_static(filename):
+    return static_file(filename,root='static')
+
+@route('/<noun:path>')
+def goyopath(noun):
+    """ Forward paths """
+    parts = noun.split('/')
+    noun = parts[0]
+    with connect_db() as db:
+        url = db.execute('SELECT url from urls WHERE nickname=?',[noun]).fetchone()
+    if url:
+        genredirect( urlparse.urljoin(url[0], '/'.join(parts[1:]) ) )
+    else:
+        return template('notdefined',word=noun)
+
+@error(404)
+@error(500)
+def errorpage(error):
+    return template('errorpage')
+
+# bottle.debug(True)
+application=bottle.default_app()
